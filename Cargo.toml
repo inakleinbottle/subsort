@@ -1,0 +1,11 @@
+[package]
+name = "cwksort"
+version = "0.1.0"
+authors = ["inakleinbottle <41870650+inakleinbottle@users.noreply.github.com>"]
+edition = "2018"
+
+[dependencies]
+regex = "1"
+structopt = "0.2"
+lazy_static = "1"
+
