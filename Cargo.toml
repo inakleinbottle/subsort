@@ -8,4 +8,4 @@ edition = "2018"
 regex = "1"
 structopt = "0.2"
 lazy_static = "1"
-
+zip = "0.5"
