@@ -77,6 +77,7 @@ fn process_zip(path: &Path, dst: &Path) {
                 time: String::from(m.name("time").unwrap().as_str()),
                 fname: String::from(m.name("fname").unwrap().as_str()),
             };
+            //println!("Extracting: {}", &zm);
             if !created.contains(&zm.username) {
                 fs::create_dir(&dst.join(&zm.username)).expect(
                     "Could not create directory"
@@ -117,7 +118,7 @@ fn process_dir(path: &Path) -> Vec<FileMatch> {
                         fname: String::from(m.name("fname").unwrap().as_str()),
                         path: p.path(),
                     };
-                    println!("Found: {}", &fm);
+                    //println!("Found: {}", &fm);
                     rv.push(fm);
                 }
             } else {
@@ -160,10 +161,10 @@ fn main() {
         None => PathBuf::from("."),
     };
     //println!("{}", &REGEX.as_str());
-
+    println!("processing {:?}", &src);
 
     if let Some(ext) = src.extension() {
-        if ext ==".zip" {
+        if ext == "zip" {
             process_zip(&src, &opts.dst);
         }
     } else {
