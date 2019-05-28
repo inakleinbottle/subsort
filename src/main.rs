@@ -1,11 +1,14 @@
+use std::io::{Write, Read};
 use std::path::{PathBuf, Path};
-use std::process::exit;
+
 use regex::Regex;
 use structopt::StructOpt;
 use lazy_static::lazy_static;
 use std::collections::HashSet;
 use std::fmt;
 use std::fs;
+
+use zip;
 
 lazy_static! {
 static ref REGEX: Regex = Regex::new(
@@ -37,10 +40,60 @@ struct FileMatch {
 }
 
 impl fmt::Display for FileMatch {
-
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}-{}", &self.username, &self.fname)
     }
+}
+
+
+struct ZipMatch {
+    dropbox: String,
+    username: String,
+    time: String,
+    fname: String,
+}
+
+impl fmt::Display for ZipMatch {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}-{}", &self.username, &self.fname)
+    }
+}
+
+
+
+fn process_zip(path: &Path, dst: &Path) {
+    let mut zip_archive = zip::ZipArchive::new(
+        fs::File::open(&path).unwrap()
+    ).unwrap();
+
+    let mut created: HashSet<String> = HashSet::new();
+
+    for i in 0..zip_archive.len() {
+        let mut file = zip_archive.by_index(i).unwrap();
+        if let Some(m) = REGEX.captures(&file.name()) {
+            let zm = ZipMatch {
+                dropbox: String::from(m.name("dropbox").unwrap().as_str()),
+                username: String::from(m.name("username").unwrap().as_str()),
+                time: String::from(m.name("time").unwrap().as_str()),
+                fname: String::from(m.name("fname").unwrap().as_str()),
+            };
+            if !created.contains(&zm.username) {
+                fs::create_dir(&dst.join(&zm.username)).expect(
+                    "Could not create directory"
+                );
+                created.insert(zm.username.to_owned());
+            }
+            let user_dir = dst.join(&zm.username);
+            let mut out_file = fs::File::create(user_dir.join(&zm.fname)).unwrap();
+
+            // There must be a better way of writing from one file object to another
+            // without creating a string in memory.
+            let mut str_out = String::new();
+            file.read_to_string(&mut str_out).ok();
+            out_file.write(&str_out.as_bytes()).ok();
+        }
+    }
+
 }
 
 
@@ -109,6 +162,16 @@ fn main() {
     //println!("{}", &REGEX.as_str());
 
 
-    let file_matches = process_dir(&src);
-    move_files(&opts.dst, file_matches);
+    if let Some(ext) = src.extension() {
+        if ext ==".zip" {
+            process_zip(&src, &opts.dst);
+        }
+    } else {
+        let file_matches = process_dir(&src);
+        move_files(&opts.dst, file_matches);
+    }
+
+
+    
+    
 }
